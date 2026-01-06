@@ -1,8 +1,12 @@
 import requests
 import time
 import zipfile
+import os
+from dotenv import load_dotenv
 
-api_key = 'eyJ0eXBlIjoiSldUIiwiYWxnIjoiSFM1MTIifQ.eyJqdGkiOiI2NDkwMDQyMSIsInJvbCI6IlJPTEVfUkVHSVNURVIiLCJpc3MiOiJPcGVuWExhYiIsImlhdCI6MTc2NzE4NDI4NiwiY2xpZW50SWQiOiJsa3pkeDU3bnZ5MjJqa3BxOXgydyIsInBob25lIjoiMTc2MjE0ODE5MDAiLCJvcGVuSWQiOm51bGwsInV1aWQiOiJhNTE0M2VkZC1hYzMzLTQ2ZDctYTRkMi0yYzcxNzQwYjlmMDEiLCJlbWFpbCI6IiIsImV4cCI6MTc2ODM5Mzg4Nn0.nD1sjv8XAClhfZuLbvr-WIdKAdsPCoOPXb6pm7ly_zbZo5ZbXqxx0kImgx4BVZvvlEzqwTkkceyYRz9k0c4zTg'
+load_dotenv()
+
+api_key = os.getenv('MINERU_API_KEY')
 
 def get_task_id(file_name):
     url='https://mineru.net/api/v4/extract/task'
