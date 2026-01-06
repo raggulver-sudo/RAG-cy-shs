@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG项目性能优化方案</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.8em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            color: #34495e;
+            margin-top: 50px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+        }
+
+        h2 svg {
+            width: 32px;
+            height: 32px;
+            margin-right: 15px;
+            fill: #667eea;
+        }
+
+        h3 {
+            color: #2980b9;
+            margin-top: 35px;
+            margin-bottom: 20px;
+            font-size: 1.6em;
+        }
+
+        h4 {
+            color: #16a085;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        ul, ol {
+            margin-left: 35px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        .mermaid {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: center;
+            border: 2px solid #e9ecef;
+        }
+
+        .priority-high {
+            background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+            border-left: 5px solid #e74c3c;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+        }
+
+        .priority-medium {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-left: 5px solid #f39c12;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(243, 156, 18, 0.2);
+        }
+
+        .priority-low {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-left: 5px solid #27ae60;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(39, 174, 96, 0.2);
+        }
+
+        .problem-box {
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+            border: 2px solid #e91e63;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(233, 30, 99, 0.2);
+        }
+
+        .solution-box {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border: 2px solid #2196f3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+        }
+
+        .code-block {
+            background: #282c34;
+            border: 2px solid #3e4451;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: #abb2bf;
+        }
+
+        .code-block pre {
+            margin: 0;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 25px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: left;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e9ecef;
+        }
+
+        .toc {
+            background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+            padding: 25px;
+            margin: 25px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .toc h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .toc ul {
+            list-style-type: none;
+            margin-left: 0;
+        }
+
+        .toc li {
+            margin-bottom: 12px;
+        }
+
+        .toc a {
+            color: #2980b9;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .toc a:hover {
+            color: #667eea;
+            text-decoration: underline;
+        }
+
+        .metric {
+            display: inline-block;
+            background-color: #95a5a6;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .metric-high {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .metric-medium {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .metric-low {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        }
+
+        .warning {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+        }
+
+        .info {
+            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+            border: 2px solid #17a2b8;
+            color: #0c5460;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(23, 162, 184, 0.3);
+        }
+
+        .footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 3px solid #667eea;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .bottleneck-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .bottleneck-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .bottleneck-card h4 {
+            color: #667eea;
+            margin-top: 0;
+            font-size: 1.4em;
+        }
+
+        .icon-box {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .icon-box svg {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+            fill: #667eea;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-card h3 {
+            color: white;
+            margin-top: 0;
+            font-size: 2.5em;
+        }
+
+        .stat-card p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 0;
+        }
+
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 100%;
+            background: #667eea;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .timeline-item:nth-child(odd) {
+            margin-right: 50%;
+            text-align: right;
+        }
+
+        .timeline-item:nth-child(even) {
+            margin-left: 50%;
+            text-align: left;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            border-radius: 50%;
+            transform: translateY(-50%);
+        }
+
+        .timeline-item:nth-child(odd)::before {
+            right: -12px;
+        }
+
+        .timeline-item:nth-child(even)::before {
+            left: -12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RAG项目性能优化方案</h1>
+        <p style="text-align: center; color: #7f8c8d; margin-bottom: 30px; font-size: 1.1em;">企业知识库系统性能分析与优化建议</p>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>7</h3>
+                <p>主要性能瓶颈</p>
+            </div>
+            <div class="stat-card">
+                <h3>20+</h3>
+                <p>优化方案</p>
+            </div>
+            <div class="stat-card">
+                <h3>5-10x</h3>
+                <p>预期性能提升</p>
+            </div>
+            <div class="stat-card">
+                <h3>4周</h3>
+                <p>预计实施周期</p>
+            </div>
+        </div>
+
+        <div class="toc">
+            <h3>📋 目录</h3>
+            <ul>
+                <li><a href="#section-1">1. 项目概述</a></li>
+                <li><a href="#section-2">2. 性能瓶颈分析</a></li>
+                <li><a href="#section-3">3. 详细优化方案</a></li>
+                <li><a href="#section-4">4. 优化优先级建议</a></li>
+                <li><a href="#section-5">5. 实施建议</a></li>
+            </ul>
+        </div>
+
+        <h2 id="section-1">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            1. 项目概述
+        </h2>
+        <p>本项目是一个基于RAG（检索增强生成）技术的企业知识库系统，主要用于处理和查询PDF格式的财务报告和行业研究报告。系统通过向量检索、BM25检索和LLM重排序等技术，为用户提供精准的文档检索和问答服务。</p>
+
+        <div class="mermaid">
+graph TD
+    A[用户查询] --> B[向量检索]
+    A --> C[BM25检索]
+    B --> D[混合检索]
+    C --> D
+    D --> E[LLM重排序]
+    E --> F[答案生成]
+    F --> G[PDF高亮显示]
+    
+    style A fill:#667eea
+    style B fill:#764ba2
+    style C fill:#764ba2
+    style D fill:#f39c12
+    style E fill:#e74c3c
+    style F fill:#27ae60
+    style G fill:#16a085
+        </div>
+
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>技术组件</th>
+                    <th>技术栈</th>
+                    <th>主要功能</th>
+                </tr>
+                <tr>
+                    <td>向量检索</td>
+                    <td>FAISS</td>
+                    <td>基于语义相似度的文档检索</td>
+                </tr>
+                <tr>
+                    <td>传统检索</td>
+                    <td>BM25</td>
+                    <td>基于关键词匹配的文档检索</td>
+                </tr>
+                <tr>
+                    <td>重排序</td>
+                    <td>LLM (DashScope)</td>
+                    <td>对检索结果进行精准重排</td>
+                </tr>
+                <tr>
+                    <td>Web界面</td>
+                    <td>Streamlit</td>
+                    <td>用户交互界面</td>
+                </tr>
+                <tr>
+                    <td>PDF处理</td>
+                    <td>PyMuPDF, MinerU</td>
+                    <td>PDF解析和可视化</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ 当前问题：</strong>Web界面启动速度慢，用户查询响应时间过长，严重影响用户体验。
+        </div>
+
+        <h2 id="section-2">
+            <svg viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-4H6v-2h4V7h2v4h4v2h-4v4z"/>
+            </svg>
+            2. 性能瓶颈分析
+        </h2>
+
+        <div class="mermaid">
+graph LR
+    A[性能瓶颈] --> B[LLM重排序]
+    A --> C[向量检索]
+    A --> D[API调用]
+    A --> E[PDF处理]
+    A --> F[Web启动]
+    A --> G[混合检索]
+    A --> H[文件I/O]
+    
+    B --> B1[串行处理]
+    B --> B2[多次API调用]
+    B --> B3[网络延迟累积]
+    
+    style A fill:#e74c3c
+    style B fill:#c0392b
+    style C fill:#e67e22
+    style D fill:#f39c12
+    style E fill:#27ae60
+    style F fill:#16a085
+    style G fill:#2980b9
+    style H fill:#8e44ad
+        </div>
+
+        <h3>2.1 LLM重排序过程（最严重的瓶颈）</h3>
+        <div class="bottleneck-card">
+            <h4>🔴 问题描述：</h4>
+            <ul>
+                <li>在 <code>reranking.py</code> 中使用 <code>ThreadPoolExecutor(max_workers=1)</code>，导致所有LLM调用串行执行</li>
+                <li>每个文档都需要单独调用LLM API，28个文档需要28次API调用</li>
+                <li>每次API调用都有网络延迟（通常500ms-2s），累积后非常耗时</li>
+                <li>默认配置下，单次查询的LLM重排序可能需要14-56秒</li>
+            </ul>
+        </div>
+
+        <div class="code-block">
+<pre>with ThreadPoolExecutor(max_workers=1) as executor:
+    all_results = list(executor.map(process_single_doc, documents))</pre>
+        </div>
+
+        <h3>2.2 向量检索过程</h3>
+        <div class="bottleneck-card">
+            <h4>🟠 问题描述：</h4>
+            <ul>
+                <li>首次向量检索返回28个候选文档（<code>llm_reranking_sample_size=28</code>）</li>
+                <li>FAISS索引使用 <code>IndexFlatL2</code>，在大规模数据下检索效率较低</li>
+                <li>每次查询都需要加载向量索引，没有预加载机制</li>
+                <li>向量检索时间随文档数量线性增长</li>
+            </ul>
+        </div>
+
+        <h3>2.3 API调用优化</h3>
+        <div class="bottleneck-card">
+            <h4>🟡 问题描述：</h4>
+            <ul>
+                <li>每次查询都需要调用LLM API生成答案</li>
+                <li>没有缓存机制，相同问题重复调用API</li>
+                <li>API调用可能存在网络延迟和QPS限制</li>
+                <li>同步调用方式阻塞了后续处理</li>
+            </ul>
+        </div>
+
+        <h3>2.4 PDF处理和Bbox计算</h3>
+        <div class="bottleneck-card">
+            <h4>🟢 问题描述：</h4>
+            <ul>
+                <li>每次查询都需要读取PDF文件</li>
+                <li>Bbox计算和匹配算法复杂，涉及多次循环和计算</li>
+                <li>PDF页面渲染为图片需要时间（每页约100-500ms）</li>
+                <li>没有缓存机制，重复渲染相同页面</li>
+            </ul>
+        </div>
+
+        <h3>2.5 Web界面启动优化</h3>
+        <div class="bottleneck-card">
+            <h4>🔵 问题描述：</h4>
+            <ul>
+                <li>Streamlit应用启动时需要加载所有依赖</li>
+                <li>需要在启动时初始化多个组件（向量索引、BM25索引等）</li>
+                <li>没有明显的启动优化代码</li>
+                <li>首次查询时需要加载大量资源</li>
+            </ul>
+        </div>
+
+        <h3>2.6 混合检索优化</h3>
+        <div class="bottleneck-card">
+            <h4>🟣 问题描述：</h4>
+            <ul>
+                <li>同时进行向量检索和BM25检索，但串行执行</li>
+                <li>需要合并和重排两种检索结果</li>
+                <li>BM25检索可能没有优化，每次都需要重新计算</li>
+                <li>权重配置可能不够优化</li>
+            </ul>
+        </div>
+
+        <h3>2.7 文件I/O优化</h3>
+        <div class="bottleneck-card">
+            <h4>🟤 问题描述：</h4>
+            <ul>
+                <li>每次查询都需要读取多个文件（PDF、向量索引、配置等）</li>
+                <li>没有文件缓存机制</li>
+                <li>可能存在重复的文件读取</li>
+                <li>文件读取操作同步执行，阻塞后续处理</li>
+            </ul>
+        </div>
+
+        <h2 id="section-3">
+            <svg viewBox="0 0 24 24">
+                <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+            3. 详细优化方案
+        </h2>
+
+        <div class="mermaid">
+graph TD
+    A[优化方案] --> B[LLM重排序]
+    A --> C[向量检索]
+    A --> D[API调用]
+    A --> E[PDF处理]
+    A --> F[Web启动]
+    A --> G[混合检索]
+    A --> H[文件I/O]
+    
+    B --> B1[批量处理]
+    B --> B2[增加并发]
+    B --> B3[缓存机制]
+    
+    C --> C1[优化索引]
+    C --> C2[预加载]
+    C --> C3[GPU加速]
+    
+    D --> D1[查询缓存]
+    D --> D2[异步调用]
+    D --> D3[连接池]
+    
+    style A fill:#667eea
+    style B fill:#764ba2
+    style C fill:#f39c12
+    style D fill:#e74c3c
+    style E fill:#27ae60
+    style F fill:#16a085
+    style G fill:#2980b9
+    style H fill:#8e44ad
+        </div>
+
+        <h3>3.1 LLM重排序优化</h3>
+        <div class="solution-box">
+            <h4>🚀 优化方案：</h4>
+            <ol>
+                <li><strong>批量重排序</strong>：将多个文档合并为一次LLM调用，让LLM一次性对所有文档评分
+                    <div class="code-block">
+<pre>def batch_rerank_documents(self, query: str, documents: List[Dict], batch_size: int = 10):
+    """批量重排序文档"""
+    all_scores = []
+    for i in range(0, len(documents), batch_size):
+        batch = documents[i:i + batch_size]
+        prompt = self._create_batch_rerank_prompt(query, batch)
+        scores = self._call_llm_batch(prompt)
+        all_scores.extend(scores)
+    return self._combine_scores(documents, all_scores)</pre>
+                    </div>
+                </li>
+                <li><strong>增加并发度</strong>：如果API的QPS限制允许，可以增加 <code>max_workers</code> 的值
+                    <div class="code-block">
+<pre>with ThreadPoolExecutor(max_workers=3) as executor:
+    all_results = list(executor.map(process_single_doc, documents))</pre>
+                    </div>
+                </li>
+                <li><strong>缓存机制</strong>：对相同query的reranking结果进行缓存
+                    <div class="code-block">
+<pre>from functools import lru_cache
+
+@lru_cache(maxsize=100)
+def _get_cached_reranking(self, query_hash: str, doc_ids: tuple):
+    """缓存重排序结果"""
+    return self._perform_reranking(query_hash, doc_ids)</pre>
+                    </div>
+                </li>
+                <li><strong>减少重排序样本量</strong>：将 <code>llm_reranking_sample_size</code> 从28降低到15-20</li>
+                <li><strong>使用更快的模型</strong>：考虑使用更轻量级的模型进行reranking</li>
+            </ol>
+            <h4>📈 预期效果：</h4>
+            <ul>
+                <li>批量处理可减少API调用次数70-80%</li>
+                <li>增加并发度可提升处理速度2-3倍</li>
+                <li>缓存机制可减少重复查询时间90%以上</li>
+                <li>总体可提升重排序速度5-10倍</li>
+            </ul>
+        </div>
+
+        <h3>3.2 向量检索优化</h3>
+        <div class="solution-box">
+            <h4>🚀 优化方案：</h4>
+            <ol>
+                <li><strong>优化FAISS索引</strong>：使用 <code>IndexIVFFlat</code> 或 <code>IndexIVFPQ</code> 替代 <code>IndexFlatL2</code>
+                    <div class="code-block">
+<pre>import faiss
+
+# 使用IVF索引
+quantizer = faiss.IndexFlatL2(dimension)
+index = faiss.IndexIVFFlat(quantizer, dimension, nlist)
+index.train(vectors)
+index.add(vectors)</pre>
+                    </div>
+                </li>
+                <li><strong>索引预加载</strong>：在Web启动时预先加载所有公司的FAISS索引
+                    <div class="code-block">
+<pre>@st.cache_resource
+def load_all_vector_indexes():
+    """预加载所有向量索引"""
+    indexes = {}
+    for company_name in company_names:
+        indexes[company_name] = load_vector_index(company_name)
+    return indexes</pre>
+                    </div>
+                </li>
+                <li><strong>减少初始检索数量</strong>：将 <code>llm_reranking_sample_size</code> 降低到15-20</li>
+                <li><strong>使用GPU加速</strong>：如果可用，使用GPU加速FAISS检索
+                    <div class="code-block">
+<pre>res = faiss.StandardGpuResources()
+gpu_index = faiss.index_cpu_to_gpu(res, 0, index)</pre>
+                    </div>
+                </li>
+            </ol>
+            <h4>📈 预期效果：</h4>
+            <ul>
+                <li>IVF索引可提升检索速度3-5倍</li>
+                <li>预加载可减少首次查询延迟50-70%</li>
+                <li>GPU加速可进一步提升速度2-3倍</li>
+                <li>总体可提升检索速度5-10倍</li>
+            </ul>
+        </div>
+
+        <h3>3.3 API调用优化</h3>
+        <div class="solution-box">
+            <h4>🚀 优化方案：</h4>
+            <ol>
+                <li><strong>实现查询缓存</strong>：使用Redis或内存缓存存储query-answer对
+                    <div class="code-block">
+<pre>import hashlib
+
+def get_cache_key(query: str, company_name: str) -> str:
+    """生成缓存键"""
+    content = f"{query}_{company_name}"
+    return hashlib.md5(content.encode()).hexdigest()
+
+@st.cache_data(ttl=3600)
+def cached_query(query: str, company_name: str):
+    """缓存查询结果"""
+    return perform_query(query, company_name)</pre>
+                    </div>
+                </li>
+                <li><strong>异步API调用</strong>：使用异步IO进行API调用，提高并发性能
+                    <div class="code-block">
+<pre>import asyncio
+import aiohttp
+
+async def async_llm_call(prompt: str):
+    """异步LLM调用"""
+    async with aiohttp.ClientSession() as session:
+        async with session.post(api_url, json={"prompt": prompt}) as response:
+            return await response.json()</pre>
+                    </div>
+                </li>
+                <li><strong>连接池</strong>：使用HTTP连接池减少连接建立开销
+                    <div class="code-block">
+<pre>import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
+session = requests.Session()
+retry = Retry(total=3, backoff_factor=1)
+adapter = HTTPAdapter(max_retries=retry, pool_connections=10, pool_maxsize=10)
+session.mount('http://', adapter)
+session.mount('https://', adapter)</pre>
+                    </div>
+                </li>
+                <li><strong>批量处理</strong>：如果可能，将多个query合并为一次API调用</li>
+            </ol>
+            <h4>📈 预期效果：</h4>
+            <ul>
+                <li>缓存可减少重复查询时间90%以上</li>
+                <li>异步调用可提升并发性能2-3倍</li>
+                <li>连接池可减少连接建立时间30-50%</li>
+                <li>总体可提升API调用效率3-5倍</li>
+            </ul>
+        </div>
+
+        <h3>3.4 PDF处理和Bbox计算优化</h3>
+        <div class="solution-box">
+            <h4>🚀 优化方案：</h4>
+            <ol>
+                <li><strong>PDF页面缓存</strong>：将PDF页面渲染为图片并缓存，避免重复渲染
+                    <div class="code-block">
+<pre>@st.cache_data(ttl=86400)
+def render_pdf_page(pdf_path: str, page_num: int):
+    """缓存PDF页面渲染"""
+    doc = fitz.open(pdf_path)
+    page = doc[page_num]
+    pix = page.get_pixmap()
+    img_data = pix.tobytes("png")
+    doc.close()
+    return img_data</pre>
+                    </div>
+                </li>
+                <li><strong>优化bbox匹配算法</strong>：使用更高效的算法或数据结构
+                    <div class="code-block">
+<pre>from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+def fast_bbox_matching(query_embedding, bbox_embeddings, top_k=5):
+    """使用向量相似度加速bbox匹配"""
+    similarities = cosine_similarity(
+        [query_embedding],
+        bbox_embeddings
+    )[0]
+    top_indices = np.argsort(similarities)[-top_k:][::-1]
+    return top_indices</pre>
+                    </div>
+                </li>
+                <li><strong>延迟加载</strong>：只在需要显示时才加载和渲染PDF页面</li>
+                <li><strong>预计算bbox信息</strong>：在ingestion阶段预计算并存储bbox相关信息</li>
+            </ol>
+            <h4>📈 预期效果：</h4>
+            <ul>
+                <li>PDF页面缓存可减少重复渲染时间95%以上</li>
+                <li>优化算法可提升bbox匹配速度2-5倍</li>
+                <li>延迟加载可减少初始加载时间50-70%</li>
+                <li>总体可提升PDF处理效率5-10倍</li>
+            </ul>
+        </div>
+
+        <h3>3.5 Web界面启动优化</h3>
+        <div class="solution-box">
+            <h4>🚀 优化方案：</h4>
+            <ol>
+                <li><strong>懒加载</strong>：延迟加载非关键组件
+                    <div class="code-block">
+<pre>@st.cache_resource
+def get_retriever():
+    """延迟加载检索器"""
+    return HybridRetriever()
+
+# 在需要时才调用
+if st.button("查询"):
+    retriever = get_retriever()
+    results = retriever.retrieve(...)</pre>
+                    </div>
+                </li>
+                <li><strong>缓存初始化</strong>：缓存初始化结果，避免重复计算
+                    <div class="code-block">
+<pre>@st.cache_resource
+def initialize_system():
+    """缓存系统初始化"""
+    vector_indexes = load_all_vector_indexes()
+    bm25_index = load_bm25_index()
+    return {
+        'vector_indexes': vector_indexes,
+        'bm25_index': bm25_index
+    }</pre>
+                    </div>
+                </li>
+                <li><strong>减少依赖</strong>：检查并移除不必要的依赖</li>
+                <li><strong>使用缓存装饰器</strong>：对计算密集型函数使用 <code>@st.cache_data</code></li>
+            </ol>
+            <h4>📈 预期效果：</h4>
+            <ul>
+                <li>懒加载可减少启动时间30-50%</li>
+                <li>缓存初始化可减少重复初始化时间80%以上</li>
+                <li>减少依赖可加快启动速度10-20%</li>
+                <li>总体可提升启动速度2-3倍</li>
+            </ul>
+        </div>
+
+        <h3>3.6 混合检索优化</h3>
+        <div class="solution-box">
+            <h4>🚀 优化方案：</h4>
+            <ol>
+                <li><strong>BM25索引缓存</strong>：预加载并缓存BM25索引
+                    <div class="code-block">
+<pre>@st.cache_resource
+def load_bm25_index(company_name: str):
+    """缓存BM25索引"""
+    return BM25Retriever(company_name)</pre>
+                    </div>
+                </li>
+                <li><strong>并行检索</strong>：同时进行向量检索和BM25检索
+                    <div class="code-block">
+<pre>from concurrent.futures import ThreadPoolExecutor
+
+def parallel_retrieve(query: str, company_name: str):
+    """并行检索"""
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        future_vector = executor.submit(
+            vector_retriever.retrieve, query, company_name
+        )
+        future_bm25 = executor.submit(
+            bm25_retriever.retrieve, query, company_name
+        )
+        vector_results = future_vector.result()
+        bm25_results = future_bm25.result()
+    return merge_results(vector_results, bm25_results)</pre>
+                    </div>
+                </li>
+                <li><strong>优化权重配置</strong>：调整 <code>llm_weight</code> 和其他权重参数</li>
+                <li><strong>选择性使用BM25</strong>：根据query类型决定是否使用BM25</li>
+            </ol>
+            <h4>📈 预期效果：</h4>
+            <ul>
+                <li>BM25索引缓存可减少加载时间80%以上</li>
+                <li>并行检索可提升检索速度1.5-2倍</li>
+                <li>优化权重可提升检索准确率10-20%</li>
+                <li>总体可提升混合检索效率2-3倍</li>
+            </ul>
+        </div>
+
+        <h3>3.7 文件I/O优化</h3>
+        <div class="solution-box">
+            <h4>🚀 优化方案：</h4>
+            <ol>
+                <li><strong>内存缓存</strong>：将频繁访问的文件内容缓存在内存中
+                    <div class="code-block">
+<pre>from functools import lru_cache
+
+@lru_cache(maxsize=100)
+def read_file_cached(file_path: str):
+    """缓存文件读取"""
+    with open(file_path, 'r', encoding='utf-8') as f:
+        return f.read()</pre>
+                    </div>
+                </li>
+                <li><strong>预加载</strong>：在应用启动时预加载关键文件
+                    <div class="code-block">
+<pre>@st.cache_resource
+def preload_key_files():
+    """预加载关键文件"""
+    files = {}
+    for file_path in key_file_paths:
+        files[file_path] = read_file_cached(file_path)
+    return files</pre>
+                    </div>
+                </li>
+                <li><strong>使用更快的存储</strong>：如果可能，使用SSD存储</li>
+                <li><strong>批量读取</strong>：合并多个小文件的读取操作</li>
+            </ol>
+            <h4>📈 预期效果：</h4>
+            <ul>
+                <li>内存缓存可减少重复读取时间90%以上</li>
+                <li>预加载可减少首次访问延迟50-70%</li>
+                <li>SSD存储可提升读取速度2-5倍</li>
+                <li>总体可提升文件I/O效率3-5倍</li>
+            </ul>
+        </div>
+
+        <h2 id="section-4">
+            <svg viewBox="0 0 24 24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            4. 优化优先级建议
+        </h2>
+
+        <div class="mermaid">
+graph TD
+    A[优化优先级] --> B[高优先级]
+    A --> C[中优先级]
+    A --> D[低优先级]
+    
+    B --> B1[LLM重排序]
+    B --> B2[查询缓存]
+    B --> B3[减少样本量]
+    
+    C --> C1[FAISS优化]
+    C --> C2[PDF缓存]
+    C --> C3[异步API]
+    C --> C4[Web启动]
+    
+    D --> D1[Bbox算法]
+    D --> D2[GPU加速]
+    D --> D3[混合检索并行]
+    D --> D4[文件I/O]
+    
+    style A fill:#667eea
+    style B fill:#e74c3c
+    style C fill:#f39c12
+    style D fill:#27ae60
+        </div>
+
+        <div class="priority-high">
+            <h3>🔴 高优先级（立即实施）</h3>
+            <p><span class="metric metric-high">影响程度</span> <span class="metric metric-high">实施难度</span></p>
+            <ol>
+                <li><strong>优化LLM重排序过程</strong> - 批量处理、增加并发、实现缓存
+                    <ul>
+                        <li>预期提升：5-10倍速度提升</li>
+                        <li>实施时间：1-2周</li>
+                        <li>技术难度：中等</li>
+                    </ul>
+                </li>
+                <li><strong>实现查询缓存机制</strong> - 使用Redis或内存缓存
+                    <ul>
+                        <li>预期提升：重复查询90%以上时间减少</li>
+                        <li>实施时间：3-5天</li>
+                        <li>技术难度：低</li>
+                    </ul>
+                </li>
+                <li><strong>减少初始检索样本量</strong> - 将llm_reranking_sample_size降低到15-20
+                    <ul>
+                        <li>预期提升：30-40%速度提升</li>
+                        <li>实施时间：1天</li>
+                        <li>技术难度：极低</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="priority-medium">
+            <h3>🟡 中优先级（短期实施）</h3>
+            <p><span class="metric metric-medium">影响程度</span> <span class="metric metric-medium">实施难度</span></p>
+            <ol>
+                <li><strong>优化FAISS索引和预加载</strong> - 使用IVF索引、预加载索引
+                    <ul>
+                        <li>预期提升：5-10倍速度提升</li>
+                        <li>实施时间：1-2周</li>
+                        <li>技术难度：中等</li>
+                    </ul>
+                </li>
+                <li><strong>PDF页面缓存</strong> - 缓存渲染后的PDF页面
+                    <ul>
+                        <li>预期提升：重复访问95%以上时间减少</li>
+                        <li>实施时间：3-5天</li>
+                        <li>技术难度：低</li>
+                    </ul>
+                </li>
+                <li><strong>异步API调用</strong> - 使用异步IO进行API调用
+                    <ul>
+                        <li>预期提升：2-3倍并发性能提升</li>
+                        <li>实施时间：1-2周</li>
+                        <li>技术难度：中等</li>
+                    </ul>
+                </li>
+                <li><strong>Web界面启动优化</strong> - 懒加载、缓存初始化
+                    <ul>
+                        <li>预期提升：2-3倍启动速度提升</li>
+                        <li>实施时间：3-5天</li>
+                        <li>技术难度：低</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="priority-low">
+            <h3>🟢 低优先级（长期优化）</h3>
+            <p><span class="metric metric-low">影响程度</span> <span class="metric metric-low">实施难度</span></p>
+            <ol>
+                <li><strong>优化bbox匹配算法</strong> - 使用更高效的算法
+                    <ul>
+                        <li>预期提升：2-5倍速度提升</li>
+                        <li>实施时间：2-3周</li>
+                        <li>技术难度：高</li>
+                    </ul>
+                </li>
+                <li><strong>使用GPU加速</strong> - GPU加速FAISS检索
+                    <ul>
+                        <li>预期提升：2-3倍速度提升</li>
+                        <li>实施时间：1-2周</li>
+                        <li>技术难度：中等</li>
+                    </ul>
+                </li>
+                <li><strong>混合检索并行化</strong> - 并行执行向量检索和BM25检索
+                    <ul>
+                        <li>预期提升：1.5-2倍速度提升</li>
+                        <li>实施时间：3-5天</li>
+                        <li>技术难度：低</li>
+                    </ul>
+                </li>
+                <li><strong>文件I/O优化</strong> - 内存缓存、预加载
+                    <ul>
+                        <li>预期提升：3-5倍速度提升</li>
+                        <li>实施时间：1周</li>
+                        <li>技术难度：低</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <h2 id="section-5">
+            <svg viewBox="0 0 24 24">
+                <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+            </svg>
+            5. 实施建议
+        </h2>
+
+        <div class="mermaid">
+gantt
+    title 优化实施时间线
+    dateFormat  YYYY-MM-DD
+    section 高优先级
+    LLM重排序优化       :a1, 2024-01-01, 14d
+    查询缓存机制        :a2, after a1, 5d
+    减少检索样本量      :a3, after a2, 1d
+    
+    section 中优先级
+    FAISS索引优化       :b1, after a3, 14d
+    PDF页面缓存         :b2, after b1, 5d
+    异步API调用         :b3, after b2, 14d
+    Web启动优化         :b4, after b3, 5d
+    
+    section 低优先级
+    Bbox算法优化        :c1, after b4, 21d
+    GPU加速            :c2, after c1, 14d
+    混合检索并行        :c3, after c2, 5d
+    文件I/O优化         :c4, after c3, 7d
+        </div>
+
+        <h3>5.1 实施策略</h3>
+        <div class="info">
+            <h4>📅 分阶段实施：</h4>
+            <ol>
+                <li><strong>第一阶段（1-2周）</strong>：实施高优先级优化
+                    <ul>
+                        <li>优化LLM重排序过程</li>
+                        <li>实现查询缓存机制</li>
+                        <li>减少初始检索样本量</li>
+                    </ul>
+                </li>
+                <li><strong>第二阶段（2-3周）</strong>：实施中优先级优化
+                    <ul>
+                        <li>优化FAISS索引和预加载</li>
+                        <li>PDF页面缓存</li>
+                        <li>Web界面启动优化</li>
+                    </ul>
+                </li>
+                <li><strong>第三阶段（3-4周）</strong>：实施低优先级优化
+                    <ul>
+                        <li>优化bbox匹配算法</li>
+                        <li>使用GPU加速</li>
+                        <li>混合检索并行化</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <h3>5.2 性能监控</h3>
+        <div class="info">
+            <h4>📊 建立性能监控机制：</h4>
+            <ul>
+                <li>记录每个查询的响应时间</li>
+                <li>监控各个组件的耗时分布</li>
+                <li>跟踪缓存命中率</li>
+                <li>记录API调用次数和延迟</li>
+                <li>定期进行性能测试和优化</li>
+            </ul>
+        </div>
+
+        <div class="mermaid">
+graph LR
+    A[性能监控] --> B[响应时间]
+    A --> C[耗时分布]
+    A --> D[缓存命中率]
+    A --> E[API调用]
+    A --> F[定期测试]
+    
+    B --> B1[记录每个查询]
+    C --> C1[组件耗时分析]
+    D --> D1[缓存效率]
+    E --> E1[调用次数/延迟]
+    F --> F1[性能基准测试]
+    
+    style A fill:#667eea
+    style B fill:#764ba2
+    style C fill:#f39c12
+    style D fill:#e74c3c
+    style E fill:#27ae60
+    style F fill:#16a085
+        </div>
+
+        <h3>5.3 测试建议</h3>
+        <div class="info">
+            <h4>🧪 性能测试方法：</h4>
+            <ul>
+                <li>使用相同的测试数据集进行前后对比</li>
+                <li>测试不同查询类型的性能表现</li>
+                <li>模拟并发用户场景</li>
+                <li>测试缓存效果</li>
+                <li>记录优化前后的性能指标</li>
+            </ul>
+        </div>
+
+        <h3>5.4 注意事项</h3>
+        <div class="warning">
+            <h4>⚠️ 实施过程中的注意事项：</h4>
+            <ul>
+                <li>每次只实施一个优化，避免同时修改多个功能</li>
+                <li>在实施前备份代码和数据</li>
+                <li>在测试环境充分测试后再部署到生产环境</li>
+                <li>注意API的QPS限制，避免超限</li>
+                <li>监控优化效果，及时调整策略</li>
+                <li>保持代码的可维护性和可读性</li>
+            </ul>
+        </div>
+
+        <h3>5.5 预期总体效果</h3>
+        <div class="table-container">
+            <table>
+                <tr>
+                    <th>性能指标</th>
+                    <th>优化前</th>
+                    <th>优化后（预期）</th>
+                    <th>提升幅度</th>
+                </tr>
+                <tr>
+                    <td>Web界面启动时间</td>
+                    <td>10-20秒</td>
+                    <td>3-5秒</td>
+                    <td>3-4倍</td>
+                </tr>
+                <tr>
+                    <td>首次查询响应时间</td>
+                    <td>30-60秒</td>
+                    <td>5-10秒</td>
+                    <td>5-6倍</td>
+                </tr>
+                <tr>
+                    <td>重复查询响应时间</td>
+                    <td>30-60秒</td>
+                    <td>1-2秒</td>
+                    <td>30-60倍</td>
+                </tr>
+                <tr>
+                    <td>PDF页面显示时间</td>
+                    <td>2-5秒</td>
+                    <td>0.5-1秒</td>
+                    <td>4-5倍</td>
+                </tr>
+                <tr>
+                    <td>并发查询处理能力</td>
+                    <td>1-2 QPS</td>
+                    <td>5-10 QPS</td>
+                    <td>5倍</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="mermaid">
+graph LR
+    A[优化前] --> B[优化后]
+    
+    A1[启动: 10-20s] --> B1[启动: 3-5s]
+    A2[首次查询: 30-60s] --> B2[首次查询: 5-10s]
+    A3[重复查询: 30-60s] --> B3[重复查询: 1-2s]
+    A4[PDF显示: 2-5s] --> B4[PDF显示: 0.5-1s]
+    A5[并发: 1-2 QPS] --> B5[并发: 5-10 QPS]
+    
+    style A fill:#e74c3c
+    style B fill:#27ae60
+    style A1 fill:#c0392b
+    style B1 fill:#2ecc71
+    style A2 fill:#c0392b
+    style B2 fill:#2ecc71
+    style A3 fill:#c0392b
+    style B3 fill:#2ecc71
+    style A4 fill:#c0392b
+    style B4 fill:#2ecc71
+    style A5 fill:#c0392b
+    style B5 fill:#2ecc71
+        </div>
+
+        <div class="footer">
+            <p>📄 文档生成时间：2026-01-04</p>
+            <p>🔢 版本：2.0</p>
+            <p>📧 如有疑问或建议，请联系技术团队</p>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            gantt: {
+                titleTopMargin: 25,
+                barHeight: 20,
+                barGap: 4,
+                topPadding: 50,
+                sidePadding: 100
+            }
+        });
+    </script>
+</body>
+</html>

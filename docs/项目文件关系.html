@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG项目架构 - 文件调用关系</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .diagram-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .file-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            padding: 20px;
+            border-left: 5px solid #667eea;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .file-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .file-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .file-card p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .file-card .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .tag {
+            background: #667eea;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+        }
+
+        .subsystem {
+            background: #e8f4f8;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 5px solid #17a2b8;
+        }
+
+        .subsystem h3 {
+            color: #17a2b8;
+            margin-bottom: 15px;
+        }
+
+        .call-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .call-list li {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 3px solid #17a2b8;
+        }
+
+        .arrow {
+            color: #667eea;
+            font-weight: bold;
+            margin: 0 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .legend {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .legend h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ RAG项目架构 - 文件调用关系</h1>
+            <p>企业知识库RAG系统 - 完整的文件调用关系图</p>
+        </div>
+
+        <div class="content">
+            <!-- 系统总览 -->
+            <div class="section">
+                <h2 class="section-title">📊 系统总览</h2>
+                <div class="diagram-container">
+                    <div class="mermaid">
+graph TB
+    A[用户入口] --> B[main.py<br/>命令行工具]
+    A --> C[app_streamlit.py<br/>Web界面]
+    A --> D[pipeline.py<br/>主流程编排]
+    
+    B --> D
+    C --> D
+    
+    D --> E[PDF处理子系统]
+    D --> F[文本处理子系统]
+    D --> G[向量化和检索子系统]
+    D --> H[问题处理子系统]
+    
+    E --> E1[pdf_parsing.py]
+    E --> E2[parsed_reports_merging.py]
+    E --> E3[pdf_mineru.py]
+    
+    F --> F1[text_splitter.py]
+    F --> F2[tables_serialization.py]
+    F --> F3[parsed_reports_merging.py]
+    
+    G --> G1[ingestion.py]
+    G --> G2[retrieval.py]
+    G --> G3[reranking.py]
+    
+    H --> H1[questions_processing.py]
+    H --> H2[api_requests.py]
+    H --> H3[api_request_parallel_processor.py]
+    H --> H4[prompts.py]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bbf,stroke:#333,stroke-width:2px
+    style D fill:#bfb,stroke:#333,stroke-width:2px
+    style E fill:#fbf,stroke:#333,stroke-width:2px
+    style F fill:#fbf,stroke:#333,stroke-width:2px
+    style G fill:#fbf,stroke:#333,stroke-width:2px
+    style H fill:#fbf,stroke:#333,stroke-width:2px
+                    </div>
+                </div>
+            </div>
+
+            <!-- 详细调用关系 -->
+            <div class="section">
+                <h2 class="section-title">🔗 详细调用关系</h2>
+                <div class="diagram-container">
+                    <div class="mermaid">
+graph TB
+    subgraph 入口层
+        M[main.py]
+        S[app_streamlit.py]
+    end
+    
+    subgraph 主流程层
+        P[pipeline.py]
+    end
+    
+    subgraph PDF处理层
+        PP[pdf_parsing.py]
+        PRM[parsed_reports_merging.py]
+        PM[pdf_mineru.py]
+    end
+    
+    subgraph 文本处理层
+        TS[text_splitter.py]
+        TBS[tables_serialization.py]
+        PRM2[parsed_reports_merging.py]
+    end
+    
+    subgraph 向量化检索层
+        ING[ingestion.py]
+        RET[retrieval.py]
+        RER[reranking.py]
+    end
+    
+    subgraph 问题处理层
+        QP[questions_processing.py]
+        AR[api_requests.py]
+        ARP[api_request_parallel_processor.py]
+        PRO[prompts.py]
+    end
+    
+    M -->|调用| P
+    S -->|调用| P
+    
+    P -->|parse_pdf_reports| PP
+    P -->|serialize_tables| TBS
+    P -->|process_parsed_reports| PRM
+    P -->|export_reports_to_markdown| PM
+    P -->|chunk_reports| TS
+    P -->|create_vector_dbs| ING
+    P -->|process_questions| QP
+    
+    PP -->|使用| PRM
+    PRM -->|使用| PRM2
+    
+    TS -->|使用| TBS
+    
+    QP -->|使用| RET
+    QP -->|使用| RER
+    QP -->|使用| AR
+    QP -->|使用| ARP
+    QP -->|使用| PRO
+    
+    RET -->|使用| RER
+    
+    AR -->|使用| ARP
+    
+    style M fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style S fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
+    style P fill:#fff3e0,stroke:#f57c00,stroke-width:3px
+    style PP fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style PRM fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style PM fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style TS fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style TBS fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style ING fill:#fff8e1,stroke:#fbc02d,stroke-width:2px
+    style RET fill:#fff8e1,stroke:#fbc02d,stroke-width:2px
+    style RER fill:#fff8e1,stroke:#fbc02d,stroke-width:2px
+    style QP fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    style AR fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    style ARP fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    style PRO fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+                    </div>
+                </div>
+            </div>
+
+            <!-- 子系统详解 -->
+            <div class="section">
+                <h2 class="section-title">📦 子系统详解</h2>
+
+                <!-- PDF处理子系统 -->
+                <div class="subsystem">
+                    <h3>1. PDF处理子系统</h3>
+                    <p>负责PDF文件的解析、转换和初步处理</p>
+                    <ul class="call-list">
+                        <li><strong>pdf_parsing.py</strong> - 使用Docling库解析PDF，提取文本、表格、图片等内容</li>
+                        <li><strong>parsed_reports_merging.py</strong> - 合并解析后的报告组件，生成结构化JSON</li>
+                        <li><strong>pdf_mineru.py</strong> - 使用MinerU API将PDF转换为Markdown格式</li>
+                    </ul>
+                    <div class="diagram-container">
+                        <div class="mermaid">
+graph LR
+    A[PDF文件] --> B[pdf_parsing.py]
+    B --> C[提取文本/表格/图片]
+    C --> D[parsed_reports_merging.py]
+    D --> E[结构化JSON]
+    
+    A --> F[pdf_mineru.py]
+    F --> G[Markdown文件]
+    
+    style A fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    style B fill:#bbdefb,stroke:#1976d2,stroke-width:2px
+    style C fill:#bbdefb,stroke:#1976d2,stroke-width:2px
+    style D fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    style E fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    style F fill:#ffe0b2,stroke:#f57c00,stroke-width:2px
+    style G fill:#ffe0b2,stroke:#f57c00,stroke-width:2px
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 文本处理子系统 -->
+                <div class="subsystem">
+                    <h3>2. 文本处理子系统</h3>
+                    <p>负责文本分块、表格序列化和报告规整</p>
+                    <ul class="call-list">
+                        <li><strong>text_splitter.py</strong> - 将Markdown文件按页分块，支持表格插入</li>
+                        <li><strong>tables_serialization.py</strong> - 使用LLM对表格进行序列化，提取结构化信息</li>
+                        <li><strong>parsed_reports_merging.py</strong> - 规整报告文本，清洗格式</li>
+                    </ul>
+                    <div class="diagram-container">
+                        <div class="mermaid">
+graph LR
+    A[Markdown文件] --> B[text_splitter.py]
+    B --> C[按页分块]
+    C --> D[插入序列化表格]
+    D --> E[分块JSON]
+    
+    F[表格HTML] --> G[tables_serialization.py]
+    G --> H[LLM序列化]
+    H --> I[结构化表格信息]
+    I --> D
+    
+    style A fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px
+    style B fill:#c5cae9,stroke:#3f51b5,stroke-width:2px
+    style C fill:#c5cae9,stroke:#3f51b5,stroke-width:2px
+    style D fill:#c5cae9,stroke:#3f51b5,stroke-width:2px
+    style E fill:#c5cae9,stroke:#3f51b5,stroke-width:2px
+    style F fill:#ffccbc,stroke:#e64a19,stroke-width:2px
+    style G fill:#ffccbc,stroke:#e64a19,stroke-width:2px
+    style H fill:#ffccbc,stroke:#e64a19,stroke-width:2px
+    style I fill:#ffccbc,stroke:#e64a19,stroke-width:2px
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 向量化检索子系统 -->
+                <div class="subsystem">
+                    <h3>3. 向量化检索子系统</h3>
+                    <p>负责向量数据库创建、检索和重排</p>
+                    <ul class="call-list">
+                        <li><strong>ingestion.py</strong> - 从分块报告创建FAISS向量数据库</li>
+                        <li><strong>retrieval.py</strong> - 实现向量检索、BM25检索和混合检索</li>
+                        <li><strong>reranking.py</strong> - 使用Jina API或LLM对检索结果进行重排</li>
+                    </ul>
+                    <div class="diagram-container">
+                        <div class="mermaid">
+graph LR
+    A[分块JSON] --> B[ingestion.py]
+    B --> C[文本嵌入]
+    C --> D[FAISS向量库]
+    
+    E[用户问题] --> F[retrieval.py]
+    F --> G[向量检索]
+    F --> H[BM25检索]
+    G --> I[混合检索结果]
+    H --> I
+    I --> J[reranking.py]
+    J --> K[重排结果]
+    
+    style A fill:#b3e5fc,stroke:#0288d1,stroke-width:2px
+    style B fill:#b3e5fc,stroke:#0288d1,stroke-width:2px
+    style C fill:#b3e5fc,stroke:#0288d1,stroke-width:2px
+    style D fill:#b3e5fc,stroke:#0288d1,stroke-width:2px
+    style E fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style F fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style G fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style H fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style I fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style J fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style K fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 问题处理子系统 -->
+                <div class="subsystem">
+                    <h3>4. 问题处理子系统</h3>
+                    <p>负责问题处理、答案生成和API调用</p>
+                    <ul class="call-list">
+                        <li><strong>questions_processing.py</strong> - 处理问题，检索上下文，生成答案</li>
+                        <li><strong>api_requests.py</strong> - 封装多个LLM提供商的API调用</li>
+                        <li><strong>api_request_parallel_processor.py</strong> - 并发处理API请求，限流控制</li>
+                        <li><strong>prompts.py</strong> - 定义所有提示词模板和答案schema</li>
+                    </ul>
+                    <div class="diagram-container">
+                        <div class="mermaid">
+graph LR
+    A[用户问题] --> B[questions_processing.py]
+    B --> C[检索上下文]
+    C --> D[api_requests.py]
+    D --> E[LLM生成答案]
+    E --> F[结构化答案]
+    
+    D --> G[api_request_parallel_processor.py]
+    G --> H[并发请求]
+    
+    B --> I[prompts.py]
+    I --> J[提示词模板]
+    J --> D
+    
+    style A fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
+    style B fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
+    style C fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
+    style D fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
+    style E fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
+    style F fill:#f8bbd0,stroke:#c2185b,stroke-width:2px
+    style G fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px
+    style H fill:#e1bee7,stroke:#7b1fa2,stroke-width:2px
+    style I fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    style J fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 文件功能表 -->
+            <div class="section">
+                <h2 class="section-title">📋 文件功能表</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>文件名</th>
+                            <th>功能描述</th>
+                            <th>所属子系统</th>
+                            <th>主要类/函数</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>pipeline.py</strong></td>
+                            <td>主流程编排，协调各个子系统</td>
+                            <td>主流程层</td>
+                            <td>Pipeline</td>
+                        </tr>
+                        <tr>
+                            <td><strong>main.py</strong></td>
+                            <td>命令行工具入口</td>
+                            <td>入口层</td>
+                            <td>cli</td>
+                        </tr>
+                        <tr>
+                            <td><strong>app_streamlit.py</strong></td>
+                            <td>Streamlit Web界面</td>
+                            <td>入口层</td>
+                            <td>Streamlit</td>
+                        </tr>
+                        <tr>
+                            <td><strong>pdf_parsing.py</strong></td>
+                            <td>PDF解析，提取文本/表格/图片</td>
+                            <td>PDF处理</td>
+                            <td>PDFParser, JsonReportProcessor</td>
+                        </tr>
+                        <tr>
+                            <td><strong>parsed_reports_merging.py</strong></td>
+                            <td>合并解析后的报告组件</td>
+                            <td>PDF处理/文本处理</td>
+                            <td>PageTextPreparation</td>
+                        </tr>
+                        <tr>
+                            <td><strong>pdf_mineru.py</strong></td>
+                            <td>使用MinerU API转换PDF为Markdown</td>
+                            <td>PDF处理</td>
+                            <td>get_task_id, get_result</td>
+                        </tr>
+                        <tr>
+                            <td><strong>text_splitter.py</strong></td>
+                            <td>文本分块，支持表格插入</td>
+                            <td>文本处理</td>
+                            <td>TextSplitter</td>
+                        </tr>
+                        <tr>
+                            <td><strong>tables_serialization.py</strong></td>
+                            <td>使用LLM序列化表格</td>
+                            <td>文本处理</td>
+                            <td>TableSerializer</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ingestion.py</strong></td>
+                            <td>创建FAISS向量数据库</td>
+                            <td>向量化检索</td>
+                            <td>VectorDBIngestor</td>
+                        </tr>
+                        <tr>
+                            <td><strong>retrieval.py</strong></td>
+                            <td>向量检索、BM25检索、混合检索</td>
+                            <td>向量化检索</td>
+                            <td>VectorRetriever, HybridRetriever</td>
+                        </tr>
+                        <tr>
+                            <td><strong>reranking.py</strong></td>
+                            <td>使用Jina API或LLM重排结果</td>
+                            <td>向量化检索</td>
+                            <td>JinaReranker, LLMReranker</td>
+                        </tr>
+                        <tr>
+                            <td><strong>questions_processing.py</strong></td>
+                            <td>处理问题，生成答案</td>
+                            <td>问题处理</td>
+                            <td>QuestionsProcessor</td>
+                        </tr>
+                        <tr>
+                            <td><strong>api_requests.py</strong></td>
+                            <td>封装多个LLM提供商的API</td>
+                            <td>问题处理</td>
+                            <td>APIProcessor</td>
+                        </tr>
+                        <tr>
+                            <td><strong>api_request_parallel_processor.py</strong></td>
+                            <td>并发处理API请求，限流控制</td>
+                            <td>问题处理</td>
+                            <td>process_api_requests_from_file</td>
+                        </tr>
+                        <tr>
+                            <td><strong>prompts.py</strong></td>
+                            <td>定义提示词模板和答案schema</td>
+                            <td>问题处理</td>
+                            <td>AnswerWithRAGContextNumberPrompt, RerankingPrompt</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 数据流向 -->
+            <div class="section">
+                <h2 class="section-title">🌊 数据流向</h2>
+                <div class="diagram-container">
+                    <div class="mermaid">
+graph TD
+    A[PDF文件] --> B[pdf_parsing.py]
+    B --> C[结构化JSON]
+    C --> D[parsed_reports_merging.py]
+    D --> E[规整JSON]
+    E --> F[pdf_mineru.py]
+    F --> G[Markdown文件]
+    G --> H[text_splitter.py]
+    H --> I[分块JSON]
+    I --> J[ingestion.py]
+    J --> K[FAISS向量库]
+    
+    L[用户问题] --> M[questions_processing.py]
+    M --> N[retrieval.py]
+    N --> K
+    K --> O[检索结果]
+    O --> P[reranking.py]
+    P --> Q[重排结果]
+    Q --> M
+    M --> R[api_requests.py]
+    R --> S[LLM答案]
+    S --> T[结构化答案]
+    
+    style A fill:#ffcdd2,stroke:#c62828,stroke-width:2px
+    style K fill:#fff9c4,stroke:#fbc02d,stroke-width:2px
+    style T fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+                    </div>
+                </div>
+            </div>
+
+            <!-- 其他文件 -->
+            <div class="section">
+                <h2 class="section-title">📁 其他文件</h2>
+                <div class="file-grid">
+                    <div class="file-card">
+                        <h3>scripts/1-情感分析-Qwen.py</h3>
+                        <p>使用Qwen模型进行情感分析的示例脚本</p>
+                        <div class="tags">
+                            <span class="tag">示例</span>
+                            <span class="tag">情感分析</span>
+                        </div>
+                    </div>
+                    <div class="file-card">
+                        <h3>scripts/dashscope-embedding-1.py</h3>
+                        <p>使用DashScope API进行文本嵌入的示例脚本</p>
+                        <div class="tags">
+                            <span class="tag">示例</span>
+                            <span class="tag">嵌入</span>
+                        </div>
+                    </div>
+                    <div class="file-card">
+                        <h3>setup.py</h3>
+                        <p>项目安装配置文件</p>
+                        <div class="tags">
+                            <span class="tag">配置</span>
+                            <span class="tag">安装</span>
+                        </div>
+                    </div>
+                    <div class="file-card">
+                        <h3>src/__init__.py</h3>
+                        <p>Python包初始化文件</p>
+                        <div class="tags">
+                            <span class="tag">包</span>
+                            <span class="tag">初始化</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 图例 -->
+            <div class="section">
+                <h2 class="section-title">🎨 图例</h2>
+                <div class="legend">
+                    <h3>文件颜色说明</h3>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #e1f5fe; border: 2px solid #0288d1;"></div>
+                        <span>入口层文件（main.py, app_streamlit.py）</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #fff3e0; border: 2px solid #f57c00;"></div>
+                        <span>主流程层文件（pipeline.py）</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f3e5f5; border: 2px solid #7b1fa2;"></div>
+                        <span>PDF处理层文件</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #e8f5e9; border: 2px solid #388e3c;"></div>
+                        <span>文本处理层文件</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #fff8e1; border: 2px solid #fbc02d;"></div>
+                        <span>向量化检索层文件</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #fce4ec; border: 2px solid #c2185b;"></div>
+                        <span>问题处理层文件</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+    </script>
+</body>
+</html>

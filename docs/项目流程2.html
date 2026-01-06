@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业知识库RAG系统 - 详细项目流程</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default', themeVariables: { primaryColor: '#3B82F6', edgeLabelBackground: '#ffffff', tertiaryColor: '#f1f5f9' } });
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .mermaid {
+            background: #ffffff;
+            border-radius: 1rem;
+            padding: 2rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .step-number {
+            width: 3rem;
+            height: 3rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .step-card {
+            border-left: 4px solid transparent;
+            padding-left: 1.5rem;
+            margin: 2rem 0;
+            transition: all 0.3s ease;
+        }
+        
+        .step-card:hover {
+            border-left-color: #667eea;
+            transform: translateX(5px);
+        }
+        
+        .method-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .file-badge {
+            background: #10B981;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .script-badge {
+            background: #F59E0B;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .icon-box {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .flow-arrow {
+            position: relative;
+        }
+        
+        .flow-arrow::after {
+            content: '→';
+            position: absolute;
+            right: -2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.5rem;
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8">
+    <div class="container mx-auto px-4 py-8">
+        <!-- 标题区域 -->
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold text-white mb-4 drop-shadow-lg">企业知识库RAG系统</h1>
+            <h2 class="text-2xl text-white/90 mb-2">详细项目流程文档</h2>
+            <p class="text-white/80 max-w-2xl mx-auto">完整展示从PDF文档到智能问答的端到端处理流程</p>
+        </div>
+
+        <!-- 整体流程概览 -->
+        <div class="glass-card p-8 mb-8">
+            <h2 class="text-3xl font-bold gradient-text mb-6 flex items-center">
+                <span class="icon-box bg-gradient-to-br from-blue-500 to-purple-600 text-white mr-4">📊</span>
+                整体流程概览
+            </h2>
+            <div class="mermaid">
+                graph TD
+                    Start[开始] --> Step1[步骤1: PDF转Markdown]
+                    Step1 --> Step2[步骤2: 文本分块]
+                    Step2 --> Step3[步骤3: 创建向量库]
+                    Step3 --> Step4[步骤4: 处理问题]
+                    Step4 --> End[生成答案]
+                    
+                    Step1 --> File1[生成: .md文件]
+                    Step2 --> File2[生成: .json分块文件]
+                    Step3 --> File3[生成: .faiss向量库]
+                    Step4 --> File4[生成: answers.json]
+                    
+                    style Start fill:#3B82F6,stroke:#2563EB,color:white
+                    style End fill:#10B981,stroke:#059669,color:white
+                    style Step1 fill:#8B5CF6,stroke:#7C3AED,color:white
+                    style Step2 fill:#F59E0B,stroke:#D97706,color:white
+                    style Step3 fill:#EF4444,stroke:#DC2626,color:white
+                    style Step4 fill:#EC4899,stroke:#DB2777,color:white
+                    style File1 fill:#D1FAE5,stroke:#10B981,color:#065F46
+                    style File2 fill:#DBEAFE,stroke:#3B82F6,color:#1E40AF
+                    style File3 fill:#FEF3C7,stroke:#F59E0B,color:#92400E
+                    style File4 fill:#FCE7F3,stroke:#EC4899,color:#9D174D
+            </div>
+        </div>
+
+        <!-- 详细步骤说明 -->
+        <div class="glass-card p-8 mb-8">
+            <h2 class="text-3xl font-bold gradient-text mb-6 flex items-center">
+                <span class="icon-box bg-gradient-to-br from-green-500 to-teal-600 text-white mr-4">📝</span>
+                详细步骤说明
+            </h2>
+
+            <!-- 步骤1 -->
+            <div class="step-card">
+                <div class="flex items-start">
+                    <div class="step-number mr-6">1</div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3">PDF转Markdown</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <span class="method-badge mr-2">pipeline.py</span>
+                                <span class="font-semibold text-gray-700">方法：</span>
+                                <code class="code-block inline px-2 py-1">export_reports_to_markdown(file_name)</code>
+                            </div>
+                            <div>
+                                <span class="script-badge mr-2">调用脚本</span>
+                                <span class="font-semibold text-gray-700">：</span>
+                                <code class="code-block inline px-2 py-1">pdf_mineru.py</code>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">核心功能：</span>
+                                <p class="text-gray-600 mt-2">调用MinerU API将PDF文件转换为Markdown格式，便于后续文本处理和向量化</p>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">主要方法：</span>
+                                <ul class="list-disc list-inside text-gray-600 mt-2 space-y-1">
+                                    <li><code class="code-block inline px-2 py-1">get_task_id(file_name)</code> - 获取处理任务ID</li>
+                                    <li><code class="code-block inline px-2 py-1">get_result(task_id)</code> - 下载并解压结果</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <span class="file-badge mr-2">生成文件</span>
+                                <span class="font-semibold text-gray-700">：</span>
+                                <code class="code-block inline px-2 py-1">debug_data/03_reports_markdown/*.md</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 步骤2 -->
+            <div class="step-card">
+                <div class="flex items-start">
+                    <div class="step-number mr-6">2</div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3">文本分块</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <span class="method-badge mr-2">pipeline.py</span>
+                                <span class="font-semibold text-gray-700">方法：</span>
+                                <code class="code-block inline px-2 py-1">chunk_reports(include_serialized_tables=False)</code>
+                            </div>
+                            <div>
+                                <span class="script-badge mr-2">调用脚本</span>
+                                <span class="font-semibold text-gray-700">：</span>
+                                <code class="code-block inline px-2 py-1">text_splitter.py</code>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">核心功能：</span>
+                                <p class="text-gray-600 mt-2">将Markdown文件按行分块，记录页码和行号信息，生成带元数据的JSON格式分块文件</p>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">主要方法：</span>
+                                <ul class="list-disc list-inside text-gray-600 mt-2 space-y-1">
+                                    <li><code class="code-block inline px-2 py-1">split_markdown_reports(all_md_dir, output_dir, subset_csv)</code> - 批量处理Markdown文件</li>
+                                    <li><code class="code-block inline px-2 py-1">split_markdown_file(md_path, chunk_size, chunk_overlap)</code> - 单文件分块处理</li>
+                                    <li><code class="code-block inline px-2 py-1">count_tokens(string)</code> - 统计token数量</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <span class="file-badge mr-2">生成文件</span>
+                                <span class="font-semibold text-gray-700">：</span>
+                                <code class="code-block inline px-2 py-1">databases/chunked_reports/*.json</code>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg mt-3">
+                                <p class="text-sm text-blue-800"><strong>💡 分块结构：</strong>每个分块包含 {page: 页码, lines: [起始行, 结束行], text: 文本内容}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 步骤3 -->
+            <div class="step-card">
+                <div class="flex items-start">
+                    <div class="step-number mr-6">3</div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3">创建向量数据库</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <span class="method-badge mr-2">pipeline.py</span>
+                                <span class="font-semibold text-gray-700">方法：</span>
+                                <code class="code-block inline px-2 py-1">create_vector_dbs()</code>
+                            </div>
+                            <div>
+                                <span class="script-badge mr-2">调用脚本</span>
+                                <span class="font-semibold text-gray-700">：</span>
+                                <code class="code-block inline px-2 py-1">ingestion.py</code>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">核心功能：</span>
+                                <p class="text-gray-600 mt-2">将JSON分块文件转换为FAISS向量数据库，支持高效的语义检索</p>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">主要方法：</span>
+                                <ul class="list-disc list-inside text-gray-600 mt-2 space-y-1">
+                                    <li><code class="code-block inline px-2 py-1">VectorDBIngestor.process_reports(input_dir, output_dir)</code> - 批量处理报告</li>
+                                    <li><code class="code-block inline px-2 py-1">_get_embeddings(texts)</code> - 生成文本嵌入向量</li>
+                                    <li><code class="code-block inline px-2 py-1">_create_vector_db(embeddings, documents)</code> - 创建FAISS索引</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <span class="file-badge mr-2">生成文件</span>
+                                <span class="font-semibold text-gray-700">：</span>
+                                <code class="code-block inline px-2 py-1">databases/vector_dbs/*.faiss</code>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-lg mt-3">
+                                <p class="text-sm text-green-800"><strong>💡 向量库特点：</strong>使用FAISS实现高效的相似度搜索，支持大规模文档检索</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 步骤4 -->
+            <div class="step-card">
+                <div class="flex items-start">
+                    <div class="step-number mr-6">4</div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3">处理问题并生成答案</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <span class="method-badge mr-2">pipeline.py</span>
+                                <span class="font-semibold text-gray-700">方法：</span>
+                                <code class="code-block inline px-2 py-1">process_questions()</code>
+                            </div>
+                            <div>
+                                <span class="script-badge mr-2">调用脚本</span>
+                                <span class="font-semibold text-gray-700">：</span>
+                                <code class="code-block inline px-2 py-1">questions_processing.py</code>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">核心功能：</span>
+                                <p class="text-gray-600 mt-2">接收用户问题，进行向量检索，调用LLM生成结构化答案，支持页码验证和答案优化</p>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">主要方法：</span>
+                                <ul class="list-disc list-inside text-gray-600 mt-2 space-y-1">
+                                    <li><code class="code-block inline px-2 py-1">QuestionsProcessor.process_all_questions(output_path)</code> - 批量处理问题</li>
+                                    <li><code class="code-block inline px-2 py-1">process_single_question(question, kind)</code> - 单问题处理</li>
+                                    <li><code class="code-block inline px-2 py-1">_validate_page_references(answer_dict, relevant_chunks)</code> - 页码验证</li>
+                                    <li><code class="code-block inline px-2 py-1">_generate_structured_answer(question, context, kind)</code> - 生成结构化答案</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <span class="file-badge mr-2">生成文件</span>
+                                <span class="font-semibold text-gray-700">：</span>
+                                <code class="code-block inline px-2 py-1">data/stock_data/answers*.json</code>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-lg mt-3">
+                                <p class="text-sm text-purple-800"><strong>💡 答案特点：</strong>支持多种答案类型（string、number、boolean、names），自动验证页码引用，提供详细的推理过程</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 脚本调用关系图 -->
+        <div class="glass-card p-8 mb-8">
+            <h2 class="text-3xl font-bold gradient-text mb-6 flex items-center">
+                <span class="icon-box bg-gradient-to-br from-orange-500 to-red-600 text-white mr-4">🔗</span>
+                脚本调用关系
+            </h2>
+            <div class="mermaid">
+                graph LR
+                    Pipeline[pipeline.py<br/>主流程控制器] --> PDFMineru[pdf_mineru.py<br/>PDF转Markdown]
+                    Pipeline --> TextSplitter[text_splitter.py<br/>文本分块]
+                    Pipeline --> Ingestion[ingestion.py<br/>向量数据库]
+                    Pipeline --> QuestionsProcessing[questions_processing.py<br/>问题处理]
+                    
+                    PDFMineru --> API[MinerU API<br/>外部服务]
+                    TextSplitter --> Chunks[JSON分块文件]
+                    Ingestion --> FAISS[FAISS向量库]
+                    QuestionsProcessing --> LLM[LLM模型<br/>qwen-turbo]
+                    
+                    style Pipeline fill:#EF4444,stroke:#DC2626,color:white
+                    style PDFMineru fill:#F59E0B,stroke:#D97706,color:white
+                    style TextSplitter fill:#8B5CF6,stroke:#7C3AED,color:white
+                    style Ingestion fill:#10B981,stroke:#059669,color:white
+                    style QuestionsProcessing fill:#3B82F6,stroke:#2563EB,color:white
+                    style API fill:#6B7280,stroke:#4B5563,color:white
+                    style Chunks fill:#DBEAFE,stroke:#3B82F6,color:#1E40AF
+                    style FAISS fill:#D1FAE5,stroke:#10B981,color:#065F46
+                    style LLM fill:#FCE7F3,stroke:#EC4899,color:#9D174D
+            </div>
+        </div>
+
+        <!-- 数据流向图 -->
+        <div class="glass-card p-8 mb-8">
+            <h2 class="text-3xl font-bold gradient-text mb-6 flex items-center">
+                <span class="icon-box bg-gradient-to-br from-pink-500 to-rose-600 text-white mr-4">📈</span>
+                数据流向详解
+            </h2>
+            <div class="mermaid">
+                graph TD
+                    Input[PDF文件<br/>data/stock_data/pdf_reports] --> Step1[步骤1: PDF转Markdown]
+                    Step1 --> MD[Markdown文件<br/>debug_data/03_reports_markdown]
+                    
+                    MD --> Step2[步骤2: 文本分块]
+                    Step2 --> JSON[JSON分块文件<br/>databases/chunked_reports]
+                    
+                    JSON --> Step3[步骤3: 创建向量库]
+                    Step3 --> FAISS[FAISS向量库<br/>databases/vector_dbs]
+                    
+                    FAISS --> Step4[步骤4: 处理问题]
+                    Questions[问题文件<br/>questions.json] --> Step4
+                    Step4 --> Answers[答案文件<br/>answers*.json]
+                    
+                    style Input fill:#3B82F6,stroke:#2563EB,color:white
+                    style MD fill:#10B981,stroke:#059669,color:white
+                    style JSON fill:#F59E0B,stroke:#D97706,color:white
+                    style FAISS fill:#8B5CF6,stroke:#7C3AED,color:white
+                    style Answers fill:#EC4899,stroke:#DB2777,color:white
+                    style Questions fill:#EF4444,stroke:#DC2626,color:white
+            </div>
+        </div>
+
+        <!-- 配置参数说明 -->
+        <div class="glass-card p-8 mb-8">
+            <h2 class="text-3xl font-bold gradient-text mb-6 flex items-center">
+                <span class="icon-box bg-gradient-to-br from-cyan-500 to-blue-600 text-white mr-4">⚙️</span>
+                关键配置参数
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-xl">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">RunConfig 配置</h3>
+                    <ul class="space-y-2 text-gray-700">
+                        <li><strong>use_serialized_tables:</strong> 是否使用序列化表格</li>
+                        <li><strong>parent_document_retrieval:</strong> 是否启用父文档检索</li>
+                        <li><strong>llm_reranking:</strong> 是否使用LLM重排序</li>
+                        <li><strong>parallel_requests:</strong> 并行请求数量</li>
+                        <li><strong>api_provider:</strong> LLM提供商（dashscope/openai）</li>
+                        <li><strong>answering_model:</strong> 使用的模型（qwen-turbo-latest）</li>
+                    </ul>
+                </div>
+                <div class="bg-gradient-to-br from-green-50 to-teal-50 p-6 rounded-xl">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4">PipelineConfig 路径配置</h3>
+                    <ul class="space-y-2 text-gray-700">
+                        <li><strong>root_path:</strong> 数据根目录</li>
+                        <li><strong>pdf_reports_dir:</strong> PDF报告目录</li>
+                        <li><strong>reports_markdown_path:</strong> Markdown输出目录</li>
+                        <li><strong>documents_dir:</strong> 分块文件目录</li>
+                        <li><strong>vector_db_dir:</strong> 向量库目录</li>
+                        <li><strong>answers_file_path:</strong> 答案输出路径</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 文件结构树 -->
+        <div class="glass-card p-8 mb-8">
+            <h2 class="text-3xl font-bold gradient-text mb-6 flex items-center">
+                <span class="icon-box bg-gradient-to-br from-yellow-500 to-orange-600 text-white mr-4">📁</span>
+                项目文件结构
+            </h2>
+            <div class="mermaid">
+                graph TD
+                    Root[data/stock_data] --> PDF[pdf_reports]
+                    PDF --> PDFFiles[*.pdf文件]
+                    
+                    Root --> Debug[debug_data]
+                    Debug --> MD[03_reports_markdown]
+                    MD --> MDFiles[*.md文件]
+                    
+                    Root --> DB[databases]
+                    DB --> Chunks[chunked_reports]
+                    Chunks --> JSONFiles[*.json分块文件]
+                    
+                    DB --> VectorDBs[vector_dbs]
+                    VectorDBs --> FAISSFiles[*.faiss向量库]
+                    
+                    Root --> Answers[answers*.json]
+                    Root --> Questions[questions.json]
+                    Root --> Subset[subset.csv]
+                    
+                    style Root fill:#3B82F6,stroke:#2563EB,color:white
+                    style PDF fill:#F59E0B,stroke:#D97706,color:white
+                    style Debug fill:#10B981,stroke:#059669,color:white
+                    style DB fill:#8B5CF6,stroke:#7C3AED,color:white
+                    style Answers fill:#EC4899,stroke:#DB2777,color:white
+            </div>
+        </div>
+
+        <!-- 运行示例 -->
+        <div class="glass-card p-8">
+            <h2 class="text-3xl font-bold gradient-text mb-6 flex items-center">
+                <span class="icon-box bg-gradient-to-br from-indigo-500 to-purple-600 text-white mr-4">🚀</span>
+                运行示例
+            </h2>
+            <div class="code-block">
+                <pre class="text-gray-300">
+# 初始化Pipeline
+from pathlib import Path
+from src.pipeline import Pipeline, RunConfig
+
+# 设置数据路径
+root_path = Path("data/stock_data")
+
+# 创建配置
+run_config = RunConfig(
+    parent_document_retrieval=True,
+    llm_reranking=True,
+    parallel_requests=4,
+    answering_model="qwen-turbo-latest"
+)
+
+# 初始化Pipeline
+pipeline = Pipeline(root_path, run_config=run_config)
+
+# 执行完整流程
+pipeline.export_reports_to_markdown('【财报】中芯国际：中芯国际2024年年度报告.pdf')
+pipeline.chunk_reports()
+pipeline.create_vector_dbs()
+pipeline.process_questions()
+                </pre>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="text-center mt-12 text-white/80">
+            <p class="text-lg">企业知识库RAG系统 - 详细项目流程文档</p>
+            <p class="text-sm mt-2">© 2024 Enterprise Knowledge Base RAG System</p>
+        </div>
+    </div>
+</body>
+</html>
